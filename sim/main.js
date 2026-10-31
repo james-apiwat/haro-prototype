@@ -992,7 +992,25 @@ async function refreshOutfits(reapply) {
   if (reapply && cur && cur.source === "repo") await wearOutfit(outfits.find((o) => o.id === cur.id), false);
 }
 
+// ลองรูปเป็นลายเปลือกทันที ไม่ต้องเขียน outfit.json (ชื่อไฟล์ภาษาไทยหรือมีเว้นวรรคก็ลองได้)
+function previewSkin(file, name) {
+  const ext = (file.name.match(/\.(png|jpe?g|webp)$/i) || [".png"])[0].toLowerCase();
+  const def = {
+    format: "haro-outfit/1", name: name || file.name,
+    description: `ลอง ${file.name} เป็นลายเปลือก ถ้าชอบ ให้ใส่รูปในโฟลเดอร์ชุด (ตั้งชื่อเป็นภาษาอังกฤษ) ` +
+      `แล้วใส่ใน outfit.json ว่า "body": { "shell": { "texture": "ชื่อรูป${ext}" } }`,
+    body: { shell: { texture: `skin${ext}` } },
+  };
+  return tryLocal([
+    { file: new File([JSON.stringify(def)], "outfit.json"), path: "skin/outfit.json" },
+    { file, path: `skin/skin${ext}` },
+  ]);
+}
+
 async function tryLocal(entries) {
+  const hasJson = entries.some((e) => /(^|\/)outfit\.json$/i.test(e.path));
+  const image = entries.find((e) => /\.(png|jpe?g|webp)$/i.test(e.path));
+  if (!hasJson && image) return previewSkin(image.file);          // ลากมาแค่รูป = ลองเป็นลายเปลือก
   try {
     const it = await wardrobe.fromFiles(entries);
     localOutfits = localOutfits.filter((o) => o.id !== it.id).concat(it);
@@ -1005,10 +1023,15 @@ async function tryLocal(entries) {
   }
 }
 
+// ตู้อยู่ใต้กล่องชื่อด้านซ้าย สูงได้ถึงเหนือการ์ดจอกับกล้อง (จอเตี้ยมากจะทับการ์ดได้ แต่ไม่ต่ำกว่า 260 px)
 function openWardrobe(on = !$("wardrobe").classList.contains("show")) {
-  $("wardrobe").classList.toggle("show", on);
+  const w = $("wardrobe");
+  w.classList.toggle("show", on);
   $("outfitBtn").classList.toggle("on", on);
-  if (on) $("wardrobe").style.bottom = `${innerHeight - $("bar").getBoundingClientRect().top + 8}px`;
+  if (!on) return;
+  const top = $("brand").getBoundingClientRect().bottom + 10;
+  w.style.top = `${top}px`;
+  w.style.maxHeight = `${Math.max(260, $("screens").getBoundingClientRect().top - 10 - top)}px`;
 }
 
 $("outfitBtn").onclick = () => openWardrobe();
@@ -1022,10 +1045,19 @@ $("outfitDir").onchange = (e) => {
   tryLocal([...e.target.files].map((f) => ({ file: f, path: f.webkitRelativePath || f.name })));
   e.target.value = "";
 };
+$("skinImage").onclick = () => $("skinFile").click();
+$("skinFile").onchange = (e) => {
+  if (e.target.files[0]) previewSkin(e.target.files[0]);
+  e.target.value = "";
+};
+// ดาวน์โหลดแม่แบบ และห่อให้ Haro ดูด้วย หมุนกล้องดูได้เลยว่าแต่ละส่วนของรูปไปอยู่ตรงไหนบนตัว
 $("skinTemplate").onclick = () => {
   const c = document.createElement("canvas");
   drawSkinTemplate(c, SKIN_GEO);
-  c.toBlob((b) => download("haro-skin-template.png", b, "image/png"));
+  c.toBlob((b) => {
+    download("haro-skin-template.png", b, "image/png");
+    previewSkin(new File([b], "haro-skin-template.png", { type: "image/png" }), "แม่แบบลายเปลือก");
+  });
 };
 
 // ตัว Haro เป็นไฟล์ .glb ไว้ปั้นของแต่งใน Blender (สีเดิม ไม่รวมชุดที่ใส่อยู่)

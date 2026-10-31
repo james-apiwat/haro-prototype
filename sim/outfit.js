@@ -582,6 +582,18 @@ export function drawSkinTemplate(canvas, g) {
     ctx.fillText(`สูง ${y} ซม.`, 6, py - 9);
   }
 
+  // ขอบซ้ายกับขวาคือรอยต่อเดียวกันที่กลางหลัง
+  ctx.strokeStyle = "rgba(36,57,60,.6)";
+  ctx.lineWidth = 2;
+  ctx.setLineDash([8, 6]);
+  for (const x of [1, W - 1]) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, H);
+    ctx.stroke();
+  }
+  ctx.setLineDash([]);
+
   ctx.textAlign = "center";
   ctx.font = "bold 18px 'Leelawadee UI', sans-serif";
   ctx.fillStyle = "#24393c";
@@ -589,9 +601,13 @@ export function drawSkinTemplate(canvas, g) {
   ctx.fillText("หน้า", pxOf(0), pyOf(0.4));
   ctx.fillText("ซ้ายของ Haro", pxOf(90), lowY);
   ctx.fillText("ขวาของ Haro", pxOf(-90), lowY);
-  ctx.fillText("หลัง", pxOf(-180) + 40, lowY);
-  ctx.fillText("หลัง", pxOf(180) - 40, lowY);
   ctx.fillText("ฟอยล์บนหัว (จุดลูบ)", pxOf(0), pyOf(6.1));
+  ctx.font = "bold 14px 'Leelawadee UI', sans-serif";
+  ctx.textAlign = "left";
+  ctx.fillText("หลัง ↔ ต่อกับขอบขวา", 8, lowY);
+  ctx.textAlign = "right";
+  ctx.fillText("ต่อกับขอบซ้าย ↔ หลัง", W - 8, lowY);
+  ctx.textAlign = "center";
   ctx.font = "bold 15px 'Leelawadee UI', sans-serif";
   ctx.fillText("ฟอยล์ข้าง", pxOf(60), pyOf(3.6));
   ctx.fillText("ฟอยล์ข้าง", pxOf(-60), pyOf(3.6));
@@ -601,12 +617,29 @@ export function drawSkinTemplate(canvas, g) {
   ctx.fillText("จอ (ลายตรงนี้ไม่โผล่)", pxOf(0), pyOf(g.SCREEN_Y));
   ctx.fillStyle = "#8a2020";
   ctx.fillText("กล้อง", pxOf(0) + 52, pyOf(g.LENS_Y));
+
+  // คำอธิบาย มุมซ้ายบน (บนตัวจริงตรงนี้คือยอดหัว ข้อความจะถูกบีบจนอ่านไม่ออก ไม่เป็นไร)
+  const lines = [
+    "แม่แบบลายเปลือก Haro (1024 × 512)",
+    "คือเปลือกไข่ที่แกะออกมาแผ่ราบ เหมือนแผนที่โลก",
+    "กลางภาพ = ด้านหน้า · ขอบซ้ายกับขวาต่อกันที่กลางหลัง",
+    "ขอบบนทั้งเส้น = จุดเดียวบนยอดหัว ยิ่งสูงลายยิ่งหด",
+    "ฟ้า = จุดลูบ · ดำ = จอ · แดง = กล้อง · เทา = ใต้ปีกหรือใต้ตัว",
+  ];
   ctx.font = "13px 'Leelawadee UI', sans-serif";
-  ctx.fillStyle = "rgba(36,57,60,.85)";
+  const boxW = Math.max(...lines.map((t) => ctx.measureText(t).width)) + 20;
+  const x0 = 88, y0 = 10, lh = 19;
+  ctx.fillStyle = "rgba(255,255,255,.88)";
+  ctx.strokeStyle = "rgba(36,57,60,.35)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.roundRect(x0, y0, boxW, lines.length * lh + 12, 8);
+  ctx.fill();
+  ctx.stroke();
   ctx.textAlign = "left";
-  [
-    "แม่แบบลายเปลือก Haro 1024 × 512",
-    "ด้านบนของภาพ = หัว · ขอบซ้ายและขวาต่อกันที่กลางหลัง",
-    "แถบเทาล่างสุดอยู่ใต้ตัว มองไม่เห็น",
-  ].forEach((t, i) => ctx.fillText(t, pxOf(-170), pyOf(4.3) + i * 18));
+  ctx.fillStyle = "#24393c";
+  lines.forEach((t, i) => {
+    ctx.font = `${i === 0 ? "bold " : ""}13px 'Leelawadee UI', sans-serif`;
+    ctx.fillText(t, x0 + 10, y0 + 6 + lh / 2 + i * lh);
+  });
 }

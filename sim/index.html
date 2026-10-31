@@ -86,17 +86,17 @@
     align-items: center; }
   #bar .sep { width: 1px; height: 22px; background: var(--line); margin: 0 4px; }
 
-  /* ตู้เสื้อผ้า เหนือแถบปุ่ม */
-  #wardrobe { left: 490px; right: 358px; bottom: 80px; padding: 12px 14px; max-height: 64vh; overflow-y: auto; display: none; }
+  /* ตู้เสื้อผ้า ฝั่งซ้าย ไม่บัง Haro ที่อยู่กลางจอ */
+  #wardrobe { left: 14px; top: 160px; width: 380px; padding: 12px 14px; overflow-y: auto; display: none; z-index: 2; }
   #wardrobe.show { display: block; }
   #wardrobe .head { display: flex; justify-content: space-between; align-items: center; }
   #wardrobe .head h2 { margin: 0; }
-  #outfitGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(88px, 1fr)); gap: 8px; margin: 10px 0; }
-  .outfit { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 14px 4px 8px; font-size: 13px; }
-  .outfit .sw { position: relative; width: 36px; height: 44px; border-radius: 50% 50% 46% 46% / 60% 60% 40% 40%;
-    box-shadow: inset -4px -6px 9px rgba(0,0,0,.28), 0 2px 4px rgba(0,0,0,.3); }
-  .outfit .sw::after { content: ""; position: absolute; left: 50%; top: -7px; width: 6px; height: 10px; margin-left: -3px;
-    border-radius: 3px; background: var(--leaf, transparent); }
+  #outfitGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 10px 0; }
+  .outfit { display: flex; align-items: center; gap: 10px; padding: 10px 8px 6px; font-size: 13px; text-align: left; }
+  .outfit .sw { position: relative; flex: none; width: 22px; height: 27px; border-radius: 50% 50% 46% 46% / 60% 60% 40% 40%;
+    box-shadow: inset -3px -4px 6px rgba(0,0,0,.28), 0 1px 3px rgba(0,0,0,.3); }
+  .outfit .sw::after { content: ""; position: absolute; left: 50%; top: -5px; width: 4px; height: 7px; margin-left: -2px;
+    border-radius: 2px; background: var(--leaf, transparent); }
   .outfit.bad { border-color: var(--warm); color: var(--warm); }
   #outfitInfo { font-size: 13px; margin-bottom: 10px; }
   #outfitInfo > div { margin: 2px 0; }
@@ -221,18 +221,20 @@
 <div id="wardrobe" class="card">
   <div class="head"><h2>ตู้เสื้อผ้าของ Haro</h2><button id="wardrobeClose" title="ปิด (Esc)">✕</button></div>
   <div id="outfitGrid"></div>
-  <div id="outfitInfo"></div>
-  <div class="btns">
+  <div class="btns" style="margin-bottom:10px">
     <button id="outfitReload" title="อ่านโฟลเดอร์ sim/outfits ใหม่ ใช้หลังแก้ไฟล์ชุดหรือ git pull">โหลดรายการใหม่</button>
     <button id="outfitLocal" title="ลองชุดจากโฟลเดอร์ในเครื่องก่อนใส่ใน git">ลองชุดจากโฟลเดอร์</button>
-    <button id="skinTemplate" title="ภาพแม่แบบสำหรับวาดลายเปลือก">แม่แบบลายเปลือก</button>
+    <button id="skinImage" title="เลือกรูป .png .jpg .webp มาลองเป็นลายเปลือกทันที ไม่ต้องเขียน outfit.json">ลองรูปลายเปลือก</button>
+    <button id="skinTemplate" title="ดาวน์โหลดภาพแม่แบบสำหรับวาดลายเปลือก และห่อให้ Haro ดูว่าแต่ละส่วนไปอยู่ตรงไหน">แม่แบบลายเปลือก</button>
     <button id="bodyGlb" title="ตัว Haro เป็นไฟล์ 3 มิติ เปิดใน Blender แล้วปั้นของแต่งรอบตัวได้ (1 หน่วย = 1 ซม.)">ตัว Haro สำหรับ Blender</button>
   </div>
+  <div id="outfitInfo"></div>
   <p class="muted" style="font-size:12px;margin:8px 0 0">ทำชุดเอง: ดู <span class="mono">sim/outfits/README.md</span>
-    · ลากโฟลเดอร์ชุดมาวางบนหน้านี้ก็ลองได้</p>
+    · ลากโฟลเดอร์ชุดหรือรูปลายเปลือกมาวางบนหน้านี้ก็ลองได้</p>
   <input id="outfitDir" type="file" webkitdirectory multiple hidden>
+  <input id="skinFile" type="file" accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp" hidden>
 </div>
-<div id="dropHint">วางโฟลเดอร์ชุด (ที่มี outfit.json) เพื่อลองใส่ให้ Haro</div>
+<div id="dropHint">วางโฟลเดอร์ชุด (ที่มี outfit.json) หรือรูปลายเปลือก (.png .jpg .webp) เพื่อลองใส่ให้ Haro</div>
 
 <div id="intro">
   <div class="box">
