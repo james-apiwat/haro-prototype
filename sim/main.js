@@ -7,7 +7,8 @@ import * as THREE from "three";
 import { OrbitControls } from "./vendor/OrbitControls.js";
 import { RoomEnvironment } from "./vendor/RoomEnvironment.js";
 import { Brain, Memory, TRICKS, CONFIG } from "./brain.js";
-import { drawFace } from "./face.js";
+import { drawFace, COLORS } from "./face.js";
+import { Wardrobe, drawSkinTemplate } from "./outfit.js";
 
 // ============================================================
 // ค่าฮาร์ดแวร์ (ปรับได้)
@@ -126,11 +127,13 @@ const CROWN_Y = 4.6;                       // เหนือเส้นนี�
 const SIDE_X = 1.6;                        // ห่างจากแกนกลางเกินนี้คือฟอยล์ด้านข้าง (ซ้าย ขวา)
 const SIDE_PHI = [0.5, 2.14];              // มุมเริ่มและความกว้างของฟอยล์ด้านข้าง (เรเดียน วัดจากด้านหน้า)
 const LENS_Y = SCREEN_Y + 2.45;
+const PROFILE_STEPS = 48;
+const WING = { x: 3.2, y: SH.yc + 0.15, z: -0.2, rz: 0.28, s: [0.45, 1.25, 0.95] };
 
 function shellProfile(fromY = -Infinity, toY = Infinity) {
   const pts = [];
-  for (let i = 0; i <= 48; i++) {
-    const phi = SH.phi0 + (Math.PI / 2 - SH.phi0) * i / 48;
+  for (let i = 0; i <= PROFILE_STEPS; i++) {
+    const phi = SH.phi0 + (Math.PI / 2 - SH.phi0) * i / PROFILE_STEPS;
     const y = SH.yc + (phi < 0 ? SH.Rb : SH.Rt) * Math.sin(phi);
     if (y >= fromY && y <= toY) pts.push(new THREE.Vector2(SH.R * Math.cos(phi), y));
   }
@@ -141,11 +144,12 @@ const mats = {
   shell: new THREE.MeshPhysicalMaterial({ color: 0xf2ece1, roughness: 0.45, clearcoat: 0.3, clearcoatRoughness: 0.4 }),
   wing: new THREE.MeshPhysicalMaterial({ color: 0xe6dccb, roughness: 0.5, clearcoat: 0.2 }),
   base: new THREE.MeshStandardMaterial({ color: 0x2b3436, roughness: 0.6 }),
-  accent: new THREE.MeshStandardMaterial({ color: 0x7fd3db, roughness: 0.35, emissive: 0x1d4f53, emissiveIntensity: 0.4 }),
+  leaves: new THREE.MeshStandardMaterial({ color: 0x7fd3db, roughness: 0.35, emissive: 0x1d4f53, emissiveIntensity: 0.4 }),
   bezel: new THREE.MeshStandardMaterial({ color: 0x121819, roughness: 0.25, metalness: 0.1 }),
   dark: new THREE.MeshStandardMaterial({ color: 0x0b0f10, roughness: 0.4 }),
 };
-const XRAY_MATS = [mats.shell, mats.wing, mats.base, mats.accent, mats.bezel];
+mats.ring = mats.leaves.clone();           // แยกวัสดุไว้ ชุดจะได้เปลี่ยนสีขนบนหัวกับวงแหวนที่ฐานแยกกันได้
+const XRAY_MATS = [mats.shell, mats.wing, mats.base, mats.leaves, mats.ring, mats.bezel];
 
 const pickables = [];
 function addMesh(parent, geo, mat, zone, opts = {}) {
@@ -170,7 +174,7 @@ root.add(yaw);
 addMesh(root, new THREE.LatheGeometry([
   [0, 0], [4.1, 0], [4.25, 0.25], [4.2, 0.6], [3.85, 4.3], [3.7, 4.65], [3.4, BASE_H], [0, BASE_H],
 ].map(([x, y]) => new THREE.Vector2(x, y)), 64), mats.base, "base");
-const ring = addMesh(root, new THREE.TorusGeometry(3.87, 0.1, 12, 96), mats.accent, "base");
+const ring = addMesh(root, new THREE.TorusGeometry(3.87, 0.1, 12, 96), mats.ring, "base");
 ring.rotation.x = Math.PI / 2;
 ring.position.y = 4.25;
 addMesh(root, new THREE.CylinderGeometry(3.0, 3.0, 0.26, 48), mats.dark, "base").position.y = BASE_H + 0.13;
@@ -181,20 +185,22 @@ const shell = addMesh(yaw, new THREE.LatheGeometry(shellPts, 72), mats.shell, "s
 shell.rotation.y = Math.PI;                // รอยต่อไปอยู่ด้านหลัง
 
 // ปีกเล็กๆ สองข้าง (ข้างในมีฟอยล์)
-for (const sx of [1, -1]) {
+const wings = [1, -1].map((sx) => {
   const w = addMesh(yaw, new THREE.SphereGeometry(1, 32, 24), mats.wing, sx > 0 ? "left" : "right");
-  w.scale.set(0.45, 1.25, 0.95);
-  w.position.set(sx * 3.2, SH.yc + 0.15, -0.2);
-  w.rotation.z = sx * 0.28;
-}
+  w.scale.set(...WING.s);
+  w.position.set(sx * WING.x, WING.y, WING.z);
+  w.rotation.z = sx * WING.rz;
+  return w;
+});
 
 // ขนบนหัว
-for (const [x, y, rz, s] of [[0, 7.5, 0, 1], [0.45, 7.25, -0.6, 0.8], [-0.45, 7.25, 0.6, 0.8]]) {
-  const leaf = addMesh(yaw, new THREE.CapsuleGeometry(0.26, 0.9, 6, 16), mats.accent, "crown");
+const leaves = [[0, 7.5, 0, 1], [0.45, 7.25, -0.6, 0.8], [-0.45, 7.25, 0.6, 0.8]].map(([x, y, rz, s]) => {
+  const leaf = addMesh(yaw, new THREE.CapsuleGeometry(0.26, 0.9, 6, 16), mats.leaves, "crown");
   leaf.position.set(x, y, -0.1);
   leaf.rotation.set(-0.2, 0, rz);
   leaf.scale.setScalar(s);
-}
+  return leaf;
+});
 
 // จอ
 const bezel = addMesh(yaw, new THREE.CylinderGeometry(BEZEL_R, BEZEL_R, 1.3, 64), mats.bezel, "face");
@@ -233,7 +239,7 @@ const lensGlass = addMesh(lens, new THREE.CircleGeometry(0.26, 32), new THREE.Me
 }), "face", { shadow: false });
 lensGlass.position.z = 0.16;
 
-const haroCam = new THREE.PerspectiveCamera(HW.CAM_VFOV, 4 / 3, 2, 400);
+const haroCam = new THREE.PerspectiveCamera(HW.CAM_VFOV, 4 / 3, 0.5, 400);   // near สั้น ให้เห็นชุดที่บังเลนส์
 haroCam.rotation.order = "YXZ";
 haroCam.rotation.y = Math.PI;              // มองไปข้างหน้าตัวหุ่น (+Z)
 haroCam.rotation.x = HW.CAM_TILT * D2R;
@@ -257,6 +263,28 @@ for (const [start, zone] of [[SIDE_PHI[0], "left"], [Math.PI + SIDE_PHI[0], "rig
   g.renderOrder = 2;
   yaw.add(g);
 }
+
+// จุดยึดของแต่งจากไฟล์ชุด (พิกัดอธิบายใน outfits/README.md) ทุกจุดหมุนไปกับตัว ยกเว้น base
+const anchors = {};
+for (const [name, parent, p] of [
+  ["head", yaw, [0, SH.yc + SH.Rt, 0]],      // ยอดหัว
+  ["face", yaw, [0, SCREEN_Y, FACE_Z]],      // กลางจอ
+  ["body", yaw, [0, 0, 0]],                  // ก้นตัว ตรงที่ตัวนั่งบนฐาน
+  ["back", yaw, [0, SH.yc, -SH.R]],          // กลางหลัง
+  ["left", yaw, [WING.x, WING.y, WING.z]],   // ปีกซ้ายของ Haro
+  ["right", yaw, [-WING.x, WING.y, WING.z]],
+  ["base", root, [0, 0, 0]],                 // พื้นโต๊ะใต้ฐาน ไม่หมุน
+]) {
+  const a = new THREE.Group();
+  a.position.set(...p);
+  parent.add(a);
+  anchors[name] = a;
+}
+const wardrobe = new Wardrobe({
+  anchors, faceColors: COLORS,
+  slots: { shell: mats.shell, wings: mats.wing, leaves: mats.leaves, base: mats.base, ring: mats.ring, bezel: mats.bezel },
+  hideable: { wings, leaves, ring: [ring] },
+});
 
 // ---------- ชิ้นส่วนข้างใน (เห็นตอนกด X) ----------
 const inside = new THREE.Group();
@@ -553,6 +581,7 @@ function detectFace() {
   if (Math.abs(_p.x) > 0.92 || Math.abs(_p.y) > 0.92) return { seen: false, d, why: "อยู่นอกภาพ" };
   if (d < HW.FACE_NEAR) return { seen: false, d, why: "ใกล้เกินไป" };
   if (d > HW.FACE_FAR) return { seen: false, d, why: "ไกลเกินไป" };
+  if (wardrobe.blocks(_c, pos)) return { seen: false, d, why: "ชุดบังกล้อง" };
   // ภาพกล้องไม่กลับด้าน haro.py กลับซ้ายขวาให้ x บวก = เจ้าของอยู่ทางขวาของคนที่มอง Haro
   return { seen: true, d, x: -_p.x, y: -_p.y, ndcX: _p.x, ndcY: _p.y,
     size: HW.FACE_WIDTH / (2 * d * Math.tan(HALF_HFOV)) };
@@ -642,6 +671,7 @@ function setXray(on) {
     m.needsUpdate = true;
   }
   inside.visible = insideYaw.visible = on;
+  wardrobe.setVisible(!on);
   for (const l of LABELS) l.el.style.display = on ? "" : "none";
   $("xrayBtn").classList.toggle("on", on);
 }
@@ -657,7 +687,8 @@ function pick(ev) {
   const r = canvas.getBoundingClientRect();
   _ndc.set(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1);
   raycaster.setFromCamera(_ndc, camera);
-  return raycaster.intersectObjects(pickables, false)[0] || null;
+  // ของแต่งไม่อยู่ในรายการนี้ กดโดนหมวกจึงทะลุไปโดนฟอยล์ข้างใต้ เหมือนลูบผ่านผ้า  ส่วนที่ชุดซ่อนไว้กดไม่ได้
+  return raycaster.intersectObjects(pickables, false).find((h) => h.object.visible) || null;
 }
 
 function zoneOf(hit) {
@@ -861,6 +892,174 @@ $("resetMem").onclick = () => {
   toast("ล้างความจำแล้ว Haro จะเริ่มเรียนรู้ใหม่");
 };
 
+// ============================================================
+// ตู้เสื้อผ้า: ชุดอยู่ใน sim/outfits/<ชื่อชุด>/ ใส่ใน git แล้วทุกคนที่ pull ได้ชุดเดียวกัน
+// ============================================================
+const LS_OUTFIT = "haro-sim-outfit";
+const SCREEN_RAYS = { parent: yaw, center: [0, SCREEN_Y, FACE_Z + 0.05], radius: SCREEN_R,
+  toward: [0, Math.sin(20 * D2R), Math.cos(20 * D2R)] };          // มองจอจากระดับตาเจ้าของ
+const SKIN_GEO = { SH, STEPS: PROFILE_STEPS, CROWN_Y, SIDE_X, SCREEN_Y, BEZEL_R, LENS_Y, WING };
+const HEX = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i;
+let outfits = [];
+let localOutfits = [];            // ชุดที่ลองจากเครื่อง (หายเมื่อรีเฟรชหน้า)
+let outfitState = null;           // { warnings, cover } ของชุดที่ใส่อยู่
+
+const outfitLabel = (it) => (it.def && typeof it.def.name === "string" ? it.def.name : it.folder || it.id);
+
+// ไข่สีเล็กๆ บอกหน้าตาของชุด
+function swatch(it) {
+  const def = it.def || {};
+  const body = def.body || {};
+  const scr = def.screen || {};
+  const hex = (v, d) => (typeof v === "string" && HEX.test(v) ? v : d);
+  const col = (slot) => hex(body[slot] && body[slot].color, wardrobe.defaultHex(slot));
+  const el = document.createElement("span");
+  el.className = "sw";
+  const eye = hex(scr.eye, wardrobe.faceDefaults.eye), bg = hex(scr.background, wardrobe.faceDefaults.screen);
+  let layers = `radial-gradient(circle at 50% 58%, ${eye} 0 7%, ${bg} 8% 24%, ${col("bezel")} 25% 30%, transparent 31%)`;
+  const tex = body.shell && body.shell.texture;
+  if (it.source === "repo" && typeof tex === "string" && /^[A-Za-z0-9_\-./]+$/.test(tex) && !tex.includes("..")) {
+    layers += `, url("outfits/${it.id}/${tex}") center / cover`;
+  }
+  el.style.background = `${layers}, ${col("shell")}`;
+  const hidden = Array.isArray(def.hide) ? def.hide : [];
+  if (!hidden.includes("leaves")) el.style.setProperty("--leaf", col("leaves"));
+  return el;
+}
+
+function renderOutfits() {
+  const cur = wardrobe.current;
+  $("outfitGrid").replaceChildren(...outfits.map((it) => {
+    const b = document.createElement("button");
+    b.className = "outfit" + (cur && cur.id === it.id ? " on" : "") + (it.error ? " bad" : "");
+    const name = document.createElement("span");
+    name.textContent = outfitLabel(it);
+    b.append(swatch(it), name);
+    b.title = it.error ? `เปิดไม่ได้: ${it.error}` : it.source === "local" ? "ลองจากเครื่อง ยังไม่อยู่ใน git" : `sim/outfits/${it.id}/`;
+    b.onclick = () => wearOutfit(it);
+    return b;
+  }));
+  const box = $("outfitInfo");
+  box.replaceChildren();
+  if (!cur) return;
+  const def = cur.def || {};
+  const add = (cls, text) => {
+    const d = document.createElement("div");
+    d.className = cls;
+    d.textContent = text;
+    box.appendChild(d);
+  };
+  add("oname", outfitLabel(cur) + (def.author ? ` · โดย ${def.author}` : ""));
+  if (def.description) add("muted", String(def.description));
+  add("muted mono", cur.source === "local" ? `ลองจากเครื่อง: ${cur.folder}/ (ยังไม่อยู่ใน git)` : `sim/outfits/${cur.id}/outfit.json`);
+  if (outfitState) {
+    const { camera: c, screen: s } = outfitState.cover;
+    add(c > 0.05 || s > 0.1 ? "warn" : "muted", `ชุดบังกล้อง ${Math.round(c * 100)}% · บังจอ ${Math.round(s * 100)}%`);
+    for (const w of outfitState.warnings) add("warn", "⚠ " + w);
+  }
+  if (def.credits) add("muted", `เครดิต: ${def.credits}`);
+}
+
+async function wearOutfit(it, announce = true) {
+  if (!it) return;
+  if (it.error) {
+    toast(`ชุด ${outfitLabel(it)} เปิดไม่ได้: ${it.error}`);
+    return;
+  }
+  const res = await wardrobe.apply(it);
+  if (!res) return;                                   // เลือกชุดอื่นต่อระหว่างโหลด
+  outfitState = { warnings: res.warnings, cover: wardrobe.coverage(haroCam, SCREEN_RAYS) };
+  if (it.source === "repo") {
+    localStorage.setItem(LS_OUTFIT, it.id);
+    const u = new URL(location.href);
+    u.searchParams.set("outfit", it.id);              // ส่งลิงก์นี้ให้เพื่อน จะเปิดมาเจอชุดเดียวกัน
+    history.replaceState(null, "", u);
+  }
+  renderOutfits();
+  if (!announce) return;
+  toast(`Haro ใส่ชุด "${outfitLabel(it)}" แล้ว` + (res.warnings.length ? ` · มีคำเตือน ${res.warnings.length} ข้อ` : ""));
+  if (running) mem.log("outfit", it.id);
+}
+
+async function refreshOutfits(reapply) {
+  const cur = wardrobe.current;
+  outfits = (await wardrobe.list()).concat(localOutfits);
+  renderOutfits();
+  if (reapply && cur && cur.source === "repo") await wearOutfit(outfits.find((o) => o.id === cur.id), false);
+}
+
+async function tryLocal(entries) {
+  try {
+    const it = await wardrobe.fromFiles(entries);
+    localOutfits = localOutfits.filter((o) => o.id !== it.id).concat(it);
+    outfits = outfits.filter((o) => o.source !== "local").concat(localOutfits);
+    openWardrobe(true);
+    renderOutfits();
+    await wearOutfit(it);
+  } catch (e) {
+    toast("ลองชุดไม่ได้: " + e.message);
+  }
+}
+
+function openWardrobe(on = !$("wardrobe").classList.contains("show")) {
+  $("wardrobe").classList.toggle("show", on);
+  $("outfitBtn").classList.toggle("on", on);
+  if (on) $("wardrobe").style.bottom = `${innerHeight - $("bar").getBoundingClientRect().top + 8}px`;
+}
+
+$("outfitBtn").onclick = () => openWardrobe();
+$("wardrobeClose").onclick = () => openWardrobe(false);
+$("outfitReload").onclick = async () => {
+  await refreshOutfits(true);
+  toast(`เจอ ${outfits.length} ชุด`);
+};
+$("outfitLocal").onclick = () => $("outfitDir").click();
+$("outfitDir").onchange = (e) => {
+  tryLocal([...e.target.files].map((f) => ({ file: f, path: f.webkitRelativePath || f.name })));
+  e.target.value = "";
+};
+$("skinTemplate").onclick = () => {
+  const c = document.createElement("canvas");
+  drawSkinTemplate(c, SKIN_GEO);
+  c.toBlob((b) => download("haro-skin-template.png", b, "image/png"));
+};
+
+// ลากโฟลเดอร์ชุดมาวางบนหน้านี้ = ลองใส่ทันที
+async function readEntry(entry, out) {
+  if (out.length > 300) return;
+  if (entry.isFile) {
+    out.push({ file: await new Promise((ok, fail) => entry.file(ok, fail)), path: entry.fullPath });
+  } else if (entry.isDirectory) {
+    const reader = entry.createReader();
+    for (;;) {
+      const batch = await new Promise((ok, fail) => reader.readEntries(ok, fail));
+      if (!batch.length) break;
+      for (const e of batch) await readEntry(e, out);
+    }
+  }
+}
+addEventListener("dragover", (e) => {
+  if (![...e.dataTransfer.types].includes("Files")) return;
+  e.preventDefault();
+  $("dropHint").classList.add("show");
+});
+addEventListener("dragleave", (e) => { if (!e.relatedTarget) $("dropHint").classList.remove("show"); });
+addEventListener("drop", async (e) => {
+  e.preventDefault();
+  $("dropHint").classList.remove("show");
+  const entries = [...e.dataTransfer.items].map((i) => i.webkitGetAsEntry && i.webkitGetAsEntry()).filter(Boolean);
+  const loose = [...e.dataTransfer.files].map((f) => ({ file: f, path: f.name }));   // ลากมาเป็นไฟล์ ไม่ใช่โฟลเดอร์
+  const out = [];
+  for (const en of entries) await readEntry(en, out);
+  if (out.length || loose.length) tryLocal(out.length ? out : loose);
+});
+
+refreshOutfits(false).then(() => {
+  const want = new URLSearchParams(location.search).get("outfit") || localStorage.getItem(LS_OUTFIT) || "classic";
+  const ok = (id) => outfits.find((o) => o.id === id && !o.error);
+  return wearOutfit(ok(want) || ok("classic"), false);
+});
+
 addEventListener("keydown", (e) => {
   if (!running || e.target.closest("input, select")) return;
   const k = e.key.toLowerCase();
@@ -870,6 +1069,8 @@ addEventListener("keydown", (e) => {
   else if (k === "x") setXray(!xray);
   else if (k === "c") resetView();
   else if (k === "m") $("soundBtn").click();
+  else if (k === "o") openWardrobe();
+  else if (k === "escape") openWardrobe(false);
   else if (["1", "2", "3", "4"].includes(k)) setSpeed([1, 4, 16, 64][Number(k) - 1]);
 });
 
@@ -887,6 +1088,7 @@ addEventListener("resize", () => {
   renderer.setSize(innerWidth, innerHeight, false);
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
+  if ($("wardrobe").classList.contains("show")) openWardrobe(true);
 });
 
 // ============================================================
@@ -1137,7 +1339,9 @@ window.haroSim = {
   get brain() { return brain; },
   get det() { return det; },
   get yawDeg() { return yawDeg; },
-  mem, bot, camera, controls, setSpeed, setXray, setSeated,
+  mem, bot, camera, controls, setSpeed, setXray, setSeated, wardrobe,
+  get outfits() { return outfits; },
+  wear: (id) => wearOutfit(outfits.find((o) => o.id === id)),
   pet: (src = "devtools") => { pendingPet = src; },
   talk: () => { pendingHeard = true; },
 };

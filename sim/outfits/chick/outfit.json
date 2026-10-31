@@ -1,0 +1,20 @@
+{
+  "format": "haro-outfit/1",
+  "name": "ลูกเจี๊ยบ",
+  "author": "ทีม Haro",
+  "description": "ตัวเหลือง ปากกับเท้าสีส้ม จอสีครีมตาสีน้ำตาล เข้ากับชุดเสียง chick",
+  "body": {
+    "shell": { "color": "#ffd54a", "roughness": 0.75 },
+    "wings": { "color": "#ffc21a", "roughness": 0.8 },
+    "leaves": { "color": "#ffb300", "glow": "#000000" },
+    "base": { "color": "#8d6e63", "roughness": 0.9 },
+    "ring": { "color": "#ffe082", "glow": "#ffb300", "glowStrength": 0.5 }
+  },
+  "screen": { "background": "#fff6d5", "eye": "#4e342e", "highlight": "#ffffff", "blush": "#ff8a65" },
+  "parts": [
+    { "name": "ปาก", "at": "body", "shape": "cone", "size": [0.42, 0.9], "pos": [0, 0.5, 3.0], "rot": [90, 0, 0],
+      "color": "#ff8f00" },
+    { "name": "เท้า", "at": "base", "shape": "sphere", "size": 0.8, "pos": [1.1, 0.28, 4.0], "scale": [1, 0.35, 1.5],
+      "color": "#ff8f00", "mirror": true }
+  ]
+}

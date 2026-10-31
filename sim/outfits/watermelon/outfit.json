@@ -1,0 +1,14 @@
+{
+  "format": "haro-outfit/1",
+  "name": "แตงโม",
+  "author": "ทีม Haro",
+  "description": "ลายแตงโมทั้งตัว ตัวอย่างการวาดลายเปลือกจากแม่แบบ จอสีเนื้อแตง ตาเป็นเมล็ด",
+  "body": {
+    "shell": { "texture": "watermelon.png", "roughness": 0.5 },
+    "wings": { "color": "#ff5d73" },
+    "leaves": { "color": "#2e7d32", "glow": "#000000" },
+    "base": { "color": "#f1f8e9" },
+    "ring": { "color": "#ff5d73", "glow": "#ff1744", "glowStrength": 0.6 }
+  },
+  "screen": { "background": "#ff5d73", "eye": "#1b1b1b", "highlight": "#ffffff", "blush": "#ffe0e6" }
+}

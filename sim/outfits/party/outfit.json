@@ -1,0 +1,19 @@
+{
+  "format": "haro-outfit/1",
+  "name": "ปาร์ตี้",
+  "author": "ทีม Haro",
+  "description": "หมวกปาร์ตี้ลายจุดกับหูกระต่ายผูกคอ ตัวอย่างการใส่ลายรูปให้ของแต่ง",
+  "body": {
+    "ring": { "color": "#ff7aa8", "glow": "#ff2d75", "glowStrength": 0.8 }
+  },
+  "screen": { "blush": "#ff5c8a" },
+  "hide": ["leaves"],
+  "parts": [
+    { "name": "หมวก", "at": "head", "shape": "cone", "size": [1.35, 3.4], "pos": [0.2, 1.25, 0], "rot": [0, 0, -6],
+      "texture": "party-dots.png", "repeat": [4, 2] },
+    { "name": "ปุยบนหมวก", "at": "head", "shape": "sphere", "size": 0.45, "pos": [0.4, 3.0, 0], "color": "#ffd23f" },
+    { "name": "หูกระต่าย", "at": "body", "shape": "cone", "size": [0.42, 1.0], "pos": [0.5, 0.5, 2.8], "rot": [0, 0, 90],
+      "color": "#ff5c8a", "mirror": true },
+    { "name": "ปมหูกระต่าย", "at": "body", "shape": "sphere", "size": 0.24, "pos": [0, 0.5, 2.95], "color": "#ffd23f" }
+  ]
+}

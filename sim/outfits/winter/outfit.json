@@ -1,0 +1,22 @@
+{
+  "format": "haro-outfit/1",
+  "name": "ชุดกันหนาว",
+  "author": "ทีม Haro",
+  "description": "หมวกไหมพรมกับผ้าพันคอ ลายถักเป็นรูปขาวเทาที่ย้อมด้วย color ใช้รูปเดียวได้หลายสี",
+  "body": {
+    "wings": { "color": "#d84a4a", "roughness": 0.9 }
+  },
+  "screen": { "blush": "#ff6f91" },
+  "hide": ["leaves"],
+  "parts": [
+    { "name": "หมวก", "at": "head", "shape": "sphere", "size": [1.95, 90], "pos": [0, -0.7, 0], "scale": [1, 0.62, 1],
+      "color": "#3f6fb5", "texture": "knit.png", "repeat": [12, 3], "roughness": 0.95 },
+    { "name": "ขอบหมวก", "at": "head", "shape": "torus", "size": [1.95, 0.28], "pos": [0, -0.7, 0], "rot": [90, 0, 0],
+      "color": "#f2f2f2", "texture": "knit.png", "repeat": [24, 1], "roughness": 0.95 },
+    { "name": "ปุยหมวก", "at": "head", "shape": "sphere", "size": 0.55, "pos": [0, 0.95, 0], "color": "#f2f2f2", "roughness": 1 },
+    { "name": "ผ้าพันคอ", "at": "body", "shape": "torus", "size": [2.85, 0.38], "pos": [0, 0.45, 0], "rot": [90, 0, 0],
+      "color": "#d84a4a", "texture": "knit.png", "repeat": [16, 2], "roughness": 0.95 },
+    { "name": "ชายผ้าพันคอ", "at": "body", "shape": "box", "size": [0.7, 1.2, 0.2], "pos": [1.2, 0.05, 3.27], "rot": [-32, 0, 8],
+      "color": "#d84a4a", "texture": "knit.png", "repeat": [2, 2], "roughness": 0.95 }
+  ]
+}

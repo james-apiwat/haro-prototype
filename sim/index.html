@@ -86,6 +86,26 @@
     align-items: center; }
   #bar .sep { width: 1px; height: 22px; background: var(--line); margin: 0 4px; }
 
+  /* ตู้เสื้อผ้า เหนือแถบปุ่ม */
+  #wardrobe { left: 490px; right: 358px; bottom: 80px; padding: 12px 14px; max-height: 64vh; overflow-y: auto; display: none; }
+  #wardrobe.show { display: block; }
+  #wardrobe .head { display: flex; justify-content: space-between; align-items: center; }
+  #wardrobe .head h2 { margin: 0; }
+  #outfitGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(88px, 1fr)); gap: 8px; margin: 10px 0; }
+  .outfit { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 14px 4px 8px; font-size: 13px; }
+  .outfit .sw { position: relative; width: 36px; height: 44px; border-radius: 50% 50% 46% 46% / 60% 60% 40% 40%;
+    box-shadow: inset -4px -6px 9px rgba(0,0,0,.28), 0 2px 4px rgba(0,0,0,.3); }
+  .outfit .sw::after { content: ""; position: absolute; left: 50%; top: -7px; width: 6px; height: 10px; margin-left: -3px;
+    border-radius: 3px; background: var(--leaf, transparent); }
+  .outfit.bad { border-color: var(--warm); color: var(--warm); }
+  #outfitInfo { font-size: 13px; margin-bottom: 10px; }
+  #outfitInfo > div { margin: 2px 0; }
+  #outfitInfo .oname { font-weight: 600; font-size: 14px; }
+  #outfitInfo .warn { color: var(--warm); font-size: 12px; }
+  #dropHint { position: fixed; inset: 0; z-index: 15; display: none; align-items: center; justify-content: center;
+    background: rgba(8,12,13,.72); border: 3px dashed var(--accent); font-size: 20px; pointer-events: none; }
+  #dropHint.show { display: flex; }
+
   /* ป้ายตอนดูข้างใน */
   #labels { position: fixed; inset: 0; pointer-events: none; }
   .label { position: absolute; transform: translate(14px, -50%); white-space: nowrap; font-size: 12px; background: rgba(10,16,17,.9);
@@ -178,6 +198,7 @@
   <span class="sep"></span>
   <button id="xrayBtn">ดูข้างใน<kbd>X</kbd></button>
   <button id="camBtn">มุมเจ้าของ<kbd>C</kbd></button>
+  <button id="outfitBtn">เปลี่ยนชุด<kbd>O</kbd></button>
   <span class="sep"></span>
   <span class="muted">ความเร็ว</span>
   <button data-speed="1" class="on">1×</button>
@@ -197,6 +218,21 @@
   </select>
 </div>
 
+<div id="wardrobe" class="card">
+  <div class="head"><h2>ตู้เสื้อผ้าของ Haro</h2><button id="wardrobeClose" title="ปิด (Esc)">✕</button></div>
+  <div id="outfitGrid"></div>
+  <div id="outfitInfo"></div>
+  <div class="btns">
+    <button id="outfitReload" title="อ่านโฟลเดอร์ sim/outfits ใหม่ ใช้หลังแก้ไฟล์ชุดหรือ git pull">โหลดรายการใหม่</button>
+    <button id="outfitLocal" title="ลองชุดจากโฟลเดอร์ในเครื่องก่อนใส่ใน git">ลองชุดจากโฟลเดอร์</button>
+    <button id="skinTemplate" title="ภาพแม่แบบสำหรับวาดลายเปลือก">แม่แบบลายเปลือก</button>
+  </div>
+  <p class="muted" style="font-size:12px;margin:8px 0 0">ทำชุดเอง: ดู <span class="mono">sim/outfits/README.md</span>
+    · ลากโฟลเดอร์ชุดมาวางบนหน้านี้ก็ลองได้</p>
+  <input id="outfitDir" type="file" webkitdirectory multiple hidden>
+</div>
+<div id="dropHint">วางโฟลเดอร์ชุด (ที่มี outfit.json) เพื่อลองใส่ให้ Haro</div>
+
 <div id="intro">
   <div class="box">
     <h1>Haro Simulator</h1>
@@ -204,7 +240,7 @@
     <ul>
       <li><b>ลากเมาส์</b> เดินไปรอบโต๊ะ Haro หมุนตัวตามถ้ายังเห็นหน้า ล้อเมาส์ = เข้าใกล้หรือถอยออก</li>
       <li><b>กดค้างที่หัวหรือข้างตัว</b> คือลูบ (ข้างในมีแผ่นฟอยล์ต่อกับ touch pin) ลูบหลังจาก Haro ทำท่าน่ารักภายใน 5 วินาที Haro จะทำท่านั้นบ่อยขึ้น</li>
-      <li><b>T</b> พูดด้วย · <b>L</b> ลุกออกจากโต๊ะหรือกลับมา · <b>X</b> ดูชิ้นส่วนข้างใน · <b>1–4</b> เร่งเวลา</li>
+      <li><b>T</b> พูดด้วย · <b>L</b> ลุกออกจากโต๊ะหรือกลับมา · <b>X</b> ดูชิ้นส่วนข้างใน · <b>O</b> เปลี่ยนชุด · <b>1–4</b> เร่งเวลา</li>
       <li>เมินนาน Haro จะอ้อน แล้วงอน ปล่อยไว้คนเดียวจะหาวแล้วหลับ</li>
     </ul>
     <button id="startBtn">เริ่มเลย</button>
@@ -217,8 +253,8 @@
   if (location.protocol === "file:") {
     document.getElementById("error").style.display = "block";
     document.getElementById("errorMsg").innerHTML =
-      "ต้องเปิดผ่านเว็บเซิร์ฟเวอร์ ดับเบิลคลิก <b>run_sim.bat</b> ในโฟลเดอร์ haro-laptop " +
-      "หรือรัน <code>python -m http.server 8765</code> ในโฟลเดอร์ haro-laptop แล้วเปิด http://localhost:8765/sim/";
+      "ต้องเปิดผ่านเว็บเซิร์ฟเวอร์ ดับเบิลคลิก <b>run_sim.bat</b> ในโฟลเดอร์โปรเจกต์ " +
+      "หรือรัน <code>python -m http.server 8765</code> ในโฟลเดอร์โปรเจกต์ (ที่มี run_sim.bat) แล้วเปิด http://localhost:8765/sim/";
   }
 </script>
 <script type="module" src="./main.js"></script>

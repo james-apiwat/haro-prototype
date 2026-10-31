@@ -1,0 +1,30 @@
+{
+  "format": "haro-outfit/1",
+  "name": "แมวส้ม",
+  "author": "ทีม Haro",
+  "description": "หูแมว หนวด จมูกชมพู หางสั้น และตาสีเขียว ตัวอย่างการใช้ mirror ทำของซ้ายขวาคู่กัน",
+  "body": {
+    "shell": { "color": "#f4a259", "roughness": 0.7 },
+    "wings": { "color": "#fff1e0" },
+    "ring": { "color": "#ffb37a", "glow": "#ff7a1a", "glowStrength": 0.5 }
+  },
+  "screen": { "eye": "#a8e063", "blush": "#ff9eb5" },
+  "hide": ["leaves"],
+  "parts": [
+    { "name": "หู", "at": "head", "shape": "cone", "size": [1.05, 2.0], "pos": [1.55, -0.4, 0], "rot": [0, 0, -28],
+      "scale": [1, 1, 0.5], "color": "#f4a259", "roughness": 0.7, "mirror": true },
+    { "name": "ในหู", "at": "head", "shape": "cone", "size": [0.6, 1.25], "pos": [1.5, -0.5, 0.28], "rot": [0, 0, -28],
+      "scale": [1, 1, 0.3], "color": "#ffb3c1", "mirror": true },
+    { "name": "จมูก", "at": "face", "shape": "sphere", "size": 0.22, "pos": [0, -2.25, -0.5], "scale": [1.3, 0.9, 1],
+      "color": "#ff8fa3" },
+    { "name": "หนวดบน", "at": "face", "shape": "box", "size": [1.7, 0.06, 0.06], "pos": [2.75, -0.2, -0.95], "rot": [0, 0, 8],
+      "color": "#5d4037", "mirror": true },
+    { "name": "หนวดกลาง", "at": "face", "shape": "box", "size": [1.7, 0.06, 0.06], "pos": [2.75, -0.5, -0.95],
+      "color": "#5d4037", "mirror": true },
+    { "name": "หนวดล่าง", "at": "face", "shape": "box", "size": [1.7, 0.06, 0.06], "pos": [2.75, -0.8, -0.95], "rot": [0, 0, -8],
+      "color": "#5d4037", "mirror": true },
+    { "name": "หาง", "at": "back", "shape": "capsule", "size": [0.32, 2.4], "pos": [0, -1.3, 0], "rot": [-50, 0, 0],
+      "color": "#e8893e", "roughness": 0.7 },
+    { "name": "ปลายหาง", "at": "back", "shape": "sphere", "size": 0.36, "pos": [0, -0.3, -1.18], "color": "#fff1e0" }
+  ]
+}
