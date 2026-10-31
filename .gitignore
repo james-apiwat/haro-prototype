@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# ความจำและ log จากการรัน haro.py ของแต่ละคน (เป็นข้อมูลของผู้ทดสอบ ไม่ขึ้น git)
+/data/
+
+# ไฟล์ที่ Arduino สร้างตอนคอมไพล์
+firmware/**/build/
+
+# Editor และระบบปฏิบัติการ
+.vscode/
+.idea/
+.claude/settings.local.json
+Thumbs.db
+desktop.ini
+.DS_Store

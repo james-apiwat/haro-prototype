@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Haro Simulator</title>
+<style>
+  :root {
+    --bg: #0f1516;
+    --panel: rgba(18, 26, 28, 0.86);
+    --line: rgba(143, 227, 234, 0.16);
+    --text: #d6e3e3;
+    --muted: #8ba1a3;
+    --accent: #8fe3ea;
+    --pink: #e47a98;
+    --warm: #f0b46a;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--text);
+    font: 14px/1.45 "Leelawadee UI", "Noto Sans Thai", "Sarabun", system-ui, sans-serif; }
+  #view { position: fixed; inset: 0; width: 100%; height: 100%; display: block; outline: none; }
+  .card { position: fixed; background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+    backdrop-filter: blur(6px); }
+  h1 { font-size: 17px; margin: 0; letter-spacing: .2px; }
+  h2 { font-size: 12px; font-weight: 600; margin: 0 0 8px; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; }
+  button, select { font: inherit; color: var(--text); background: rgba(143,227,234,.08); border: 1px solid var(--line);
+    border-radius: 8px; padding: 6px 10px; cursor: pointer; }
+  button:hover { background: rgba(143,227,234,.16); }
+  button.on { background: rgba(143,227,234,.24); border-color: var(--accent); color: #fff; }
+  kbd { font: 11px ui-monospace, Consolas, monospace; padding: 1px 5px; border-radius: 4px; border: 1px solid var(--line);
+    background: rgba(255,255,255,.06); color: var(--muted); margin-left: 4px; }
+  .muted { color: var(--muted); }
+  .mono { font-family: ui-monospace, Consolas, monospace; font-size: 12px; }
+
+  /* มุมซ้ายบน */
+  #brand { top: 14px; left: 14px; padding: 12px 14px; max-width: 360px; }
+  #brand p { margin: 4px 0 0; font-size: 12px; color: var(--muted); }
+
+  /* สถานะกลางบน */
+  #stateChip { top: 14px; left: 50%; transform: translateX(-50%); padding: 8px 16px; text-align: center; min-width: 220px;
+    margin-left: -170px; }
+  #stateChip .big { font-size: 18px; font-weight: 600; }
+  #stateChip .small { font-size: 12px; color: var(--muted); }
+  #toast { position: fixed; top: 86px; left: 50%; transform: translateX(-50%); margin-left: -170px; pointer-events: none;
+    display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .toastItem { background: rgba(10,16,17,.92); border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px;
+    font-size: 13px; animation: fade 2.6s forwards; }
+  .toastItem.love { border-color: var(--pink); color: #ffd6e1; }
+  @keyframes fade { 0% { opacity: 0; transform: translateY(-6px); } 10%, 75% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+
+  /* แผงขวา */
+  #panel { top: 14px; right: 14px; bottom: 14px; width: 330px; padding: 14px; overflow-y: auto; }
+  #panel section { padding: 12px 0; border-top: 1px solid var(--line); }
+  #panel section:first-child { border-top: 0; padding-top: 0; }
+  .row { display: flex; justify-content: space-between; gap: 8px; margin: 3px 0; }
+  .row b { font-weight: 600; }
+  .meter { height: 6px; border-radius: 3px; background: rgba(255,255,255,.07); overflow: hidden; margin: 3px 0 7px; }
+  .meter i { display: block; height: 100%; background: var(--accent); width: 0; transition: width .2s; }
+  .meter.warm i { background: var(--warm); }
+  .trick { display: grid; grid-template-columns: 74px 1fr 64px; align-items: center; gap: 8px; margin: 5px 0; font-size: 13px; }
+  .trick .bar { height: 14px; border-radius: 4px; background: rgba(255,255,255,.06); overflow: hidden; }
+  .trick .bar i { display: block; height: 100%; background: linear-gradient(90deg, #4fb7c0, var(--accent)); width: 0;
+    transition: width .25s; }
+  .trick.fav .bar i { background: linear-gradient(90deg, #c45a7a, var(--pink)); }
+  .trick .n { text-align: right; color: var(--muted); font-size: 11px; }
+  .slider { display: grid; grid-template-columns: 74px 1fr 38px; align-items: center; gap: 8px; margin: 2px 0; font-size: 13px; }
+  .slider input { width: 100%; accent-color: var(--accent); }
+  .btns { display: flex; flex-wrap: wrap; gap: 6px; }
+  #log { max-height: 190px; overflow-y: auto; font-size: 12px; }
+  #log div { display: grid; grid-template-columns: 62px 92px 1fr; gap: 6px; padding: 2px 0; border-bottom: 1px dashed rgba(143,227,234,.07); }
+  #log .t { color: var(--muted); }
+  #log .e { color: var(--accent); }
+  #serial { white-space: pre; background: rgba(0,0,0,.25); border-radius: 6px; padding: 6px 8px; margin-top: 6px; }
+
+  /* การ์ดล่างซ้าย */
+  #screens { position: fixed; left: 14px; bottom: 14px; display: flex; gap: 10px; }
+  #screens .card { position: static; padding: 8px; }
+  #screens h2 { margin-bottom: 6px; }
+  #lcd { width: 168px; height: 168px; border-radius: 50%; display: block; image-rendering: pixelated;
+    box-shadow: 0 0 0 6px #121819, 0 0 0 7px var(--line); margin: 8px; }
+  #pip { width: 224px; height: 168px; position: relative; border-radius: 6px; overflow: hidden; outline: 1px solid var(--line); }
+  #pipOverlay { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+  /* แถบปุ่มล่าง */
+  #bar { left: 490px; right: 358px; bottom: 14px; padding: 8px; display: flex; flex-wrap: wrap; gap: 6px; justify-content: center;
+    align-items: center; }
+  #bar .sep { width: 1px; height: 22px; background: var(--line); margin: 0 4px; }
+
+  /* ป้ายตอนดูข้างใน */
+  #labels { position: fixed; inset: 0; pointer-events: none; }
+  .label { position: absolute; transform: translate(14px, -50%); white-space: nowrap; font-size: 12px; background: rgba(10,16,17,.9);
+    border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 6px; padding: 3px 8px; }
+  .label::before { content: ""; position: absolute; left: -17px; top: 50%; width: 8px; height: 8px; margin-top: -4px;
+    border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px rgba(143,227,234,.25); }
+  .bubble { position: absolute; transform: translate(-50%, -100%); background: #f4efe6; color: #263133; font-weight: 600;
+    border-radius: 14px; padding: 4px 12px; font-size: 14px; animation: pop 1.3s forwards; }
+  .bubble::after { content: ""; position: absolute; left: 50%; bottom: -6px; border: 6px solid transparent; border-top-color: #f4efe6;
+    border-bottom: 0; margin-left: -6px; }
+  @keyframes pop { 0% { opacity: 0; margin-top: 8px; } 15%, 70% { opacity: 1; margin-top: 0; } 100% { opacity: 0; margin-top: -14px; } }
+
+  /* หน้าแรก */
+  #intro { position: fixed; inset: 0; background: rgba(8,12,13,.78); display: flex; align-items: center; justify-content: center;
+    z-index: 10; backdrop-filter: blur(3px); }
+  #intro .box { max-width: 560px; padding: 26px 28px; background: #141c1e; border: 1px solid var(--line); border-radius: 16px; }
+  #intro h1 { font-size: 24px; }
+  #intro ul { padding-left: 18px; margin: 12px 0 18px; }
+  #intro li { margin: 5px 0; }
+  #intro button { font-size: 16px; padding: 10px 22px; background: var(--accent); color: #0f1516; border: 0; font-weight: 600; }
+  #error { display: none; position: fixed; inset: 0; z-index: 20; background: #141c1e; padding: 40px; }
+</style>
+<script type="importmap">
+  { "imports": { "three": "./vendor/three.module.js" } }
+</script>
+</head>
+<body>
+<canvas id="view" tabindex="0"></canvas>
+<div id="labels"></div>
+
+<div id="brand" class="card">
+  <h1>Haro Simulator</h1>
+  <p>ตัวหุ่นเสมือนของ Haro: ESP32-S3 + กล้อง OV3660, จอกลม GC9A01 240×240, เซอร์โว MG996R 360° หนึ่งตัว
+    สมองแปลงมาจาก <span class="mono">haro.py</span></p>
+  <p>ลากเมาส์ = เดินรอบโต๊ะ (คุณคือเจ้าของ) · ล้อเมาส์ = เข้าใกล้หรือถอยออก · กดค้างที่หัวหรือข้างตัว = ลูบ</p>
+</div>
+
+<div id="stateChip" class="card"><div class="big" id="stateName">-</div><div class="small" id="stateSub">-</div></div>
+<div id="toast"></div>
+
+<aside id="panel" class="card">
+  <section>
+    <h2>สถานะ</h2>
+    <div class="row"><span>เจ้าของ</span><b id="ownerTxt">-</b></div>
+    <div class="row"><span class="muted">ระยะ / มุมจากกล้อง</span><span id="ownerGeo" class="mono">-</span></div>
+    <div id="timers"></div>
+    <div class="row"><span>เซอร์โว</span><span id="servoTxt" class="mono">-</span></div>
+    <div id="serial" class="mono">-</div>
+  </section>
+  <section>
+    <h2>Haro เรียนรู้ว่าคุณชอบท่าไหน</h2>
+    <div id="tricks"></div>
+    <div class="muted" style="font-size:12px;margin-top:6px">คะแนน = (ถูกลูบภายใน 5 วิ + 1) / (ทำท่า + 2) · สีชมพู = ท่าโปรด ใช้ตอนอ้อน</div>
+  </section>
+  <section>
+    <h2>เจ้าของจำลอง</h2>
+    <div class="row" style="align-items:center"><span class="muted" style="font-size:12px">ให้บอตนั่งหน้า Haro และลูบตามความน่าจะเป็นที่ตั้งไว้ คุณจะกลายเป็นผู้ชม</span>
+      <button id="botBtn">เปิด</button></div>
+    <div id="botSliders"></div>
+    <div class="row" style="font-size:12px"><span class="muted">เลือกท่าที่บอตชอบที่สุด (20 ครั้งล่าสุด)</span><b id="botStat">-</b></div>
+  </section>
+  <section>
+    <h2>ข้อมูล</h2>
+    <div class="row"><span>เจอกัน / ถูกลูบ</span><b id="countTxt">-</b></div>
+    <div class="row"><span class="muted">เวลาในการจำลอง</span><span id="clockTxt" class="mono">-</span></div>
+    <div class="btns" style="margin-top:8px">
+      <button id="saveMem">บันทึก memory.json</button>
+      <button id="saveLog">บันทึก log.csv</button>
+      <button id="loadMem">โหลด memory.json</button>
+      <button id="resetMem">ล้างความจำ</button>
+    </div>
+    <input id="memFile" type="file" accept=".json,application/json" hidden>
+  </section>
+  <section>
+    <h2>เหตุการณ์ล่าสุด</h2>
+    <div id="log" class="mono"></div>
+  </section>
+</aside>
+
+<div id="screens">
+  <div class="card"><h2>จอจริง 240×240</h2><canvas id="lcd" width="240" height="240"></canvas></div>
+  <div class="card"><h2>ภาพจากกล้อง Haro</h2><div id="pip"><canvas id="pipOverlay" width="448" height="336"></canvas></div></div>
+</div>
+
+<div id="bar" class="card">
+  <button id="petBtn">ลูบหัว<kbd>Space</kbd></button>
+  <button id="talkBtn">พูดด้วย<kbd>T</kbd></button>
+  <button id="seenBtn" class="on">นั่งหน้า Haro<kbd>L</kbd></button>
+  <button id="micBtn">ใช้ไมค์</button>
+  <span class="sep"></span>
+  <button id="xrayBtn">ดูข้างใน<kbd>X</kbd></button>
+  <button id="camBtn">มุมเจ้าของ<kbd>C</kbd></button>
+  <span class="sep"></span>
+  <span class="muted">ความเร็ว</span>
+  <button data-speed="1" class="on">1×</button>
+  <button data-speed="4">4×</button>
+  <button data-speed="16">16×</button>
+  <button data-speed="64">64×</button>
+  <span class="sep"></span>
+  <button id="soundBtn" class="on">เสียง<kbd>M</kbd></button>
+  <select id="voiceSel" title="ชุดเสียง">
+    <option value="">เสียงปกติ</option>
+    <option value="haro">haro</option>
+    <option value="chick">chick</option>
+    <option value="duck">duck</option>
+    <option value="tiny">tiny</option>
+    <option value="sing">sing</option>
+    <option value="deep">deep</option>
+  </select>
+</div>
+
+<div id="intro">
+  <div class="box">
+    <h1>Haro Simulator</h1>
+    <p class="muted">ลองเลี้ยง Haro ก่อนประกอบตัวจริง คุณคือเจ้าของที่นั่งหน้าโต๊ะ Haro มองเห็นคุณผ่านกล้องบนหัว</p>
+    <ul>
+      <li><b>ลากเมาส์</b> เดินไปรอบโต๊ะ Haro หมุนตัวตามถ้ายังเห็นหน้า ล้อเมาส์ = เข้าใกล้หรือถอยออก</li>
+      <li><b>กดค้างที่หัวหรือข้างตัว</b> คือลูบ (ข้างในมีแผ่นฟอยล์ต่อกับ touch pin) ลูบหลังจาก Haro ทำท่าน่ารักภายใน 5 วินาที Haro จะทำท่านั้นบ่อยขึ้น</li>
+      <li><b>T</b> พูดด้วย · <b>L</b> ลุกออกจากโต๊ะหรือกลับมา · <b>X</b> ดูชิ้นส่วนข้างใน · <b>1–4</b> เร่งเวลา</li>
+      <li>เมินนาน Haro จะอ้อน แล้วงอน ปล่อยไว้คนเดียวจะหาวแล้วหลับ</li>
+    </ul>
+    <button id="startBtn">เริ่มเลย</button>
+  </div>
+</div>
+<div id="error"><h1>เปิดไม่ได้</h1><p id="errorMsg"></p></div>
+
+<script>
+  // เปิดไฟล์ตรงๆ (file://) โมดูลจะโหลดไม่ได้ ต้องเปิดผ่าน run_sim.bat
+  if (location.protocol === "file:") {
+    document.getElementById("error").style.display = "block";
+    document.getElementById("errorMsg").innerHTML =
+      "ต้องเปิดผ่านเว็บเซิร์ฟเวอร์ ดับเบิลคลิก <b>run_sim.bat</b> ในโฟลเดอร์ haro-laptop " +
+      "หรือรัน <code>python -m http.server 8765</code> ในโฟลเดอร์ haro-laptop แล้วเปิด http://localhost:8765/sim/";
+  }
+</script>
+<script type="module" src="./main.js"></script>
+</body>
+</html>
