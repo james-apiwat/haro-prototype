@@ -371,10 +371,10 @@ export class Wardrobe {
     }
     if (!gltfLoader) {
       try {
-        const { GLTFLoader } = await import("./vendor/GLTFLoader.js");
+        const { GLTFLoader } = await import("./vendor/loaders/GLTFLoader.js");
         gltfLoader = new GLTFLoader();
       } catch {
-        warn(`${where}: ยังเปิดไฟล์ .glb ไม่ได้ (ต้องมี sim/vendor/GLTFLoader.js)`);
+        warn(`${where}: เปิดไฟล์ .glb ไม่ได้ (ไม่เจอ sim/vendor/loaders/GLTFLoader.js)`);
         return null;
       }
     }

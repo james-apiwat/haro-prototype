@@ -7,6 +7,7 @@
 """
 import json
 import re
+import struct
 import sys
 from pathlib import Path
 
@@ -64,6 +65,31 @@ class Check:
             match = next((r for r in real if r.lower() == name.lower()), name)
             self.errors.append(f"{where}: {name} must match the real file name {match} exactly (upper/lower case)")
         self.used.add(path.resolve())
+        if name.lower().endswith(".glb"):
+            self.glb(path, where)
+
+    def glb(self, path, where):
+        """เปิดดูหัวไฟล์ .glb ว่าเป็น glTF 2.0 แบบไฟล์เดียวที่ simulator เปิดได้"""
+        data = path.read_bytes()
+        if len(data) < 20 or data[:4] != b"glTF" or struct.unpack("<I", data[4:8])[0] != 2:
+            self.errors.append(f"{where}: {path.name} is not a glTF 2.0 binary (.glb) file")
+            return
+        size, kind = struct.unpack("<I4s", data[12:20])
+        try:
+            gltf = json.loads(data[20:20 + size]) if kind == b"JSON" else None
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            gltf = None
+        if not isinstance(gltf, dict):
+            self.errors.append(f"{where}: {path.name} has a broken JSON chunk")
+            return
+        required = set(gltf.get("extensionsRequired", []))
+        if "KHR_draco_mesh_compression" in required or "EXT_meshopt_compression" in required:
+            self.errors.append(f"{where}: {path.name} is compressed (Draco/meshopt), export again without compression")
+        external = [b.get("uri") for b in gltf.get("buffers", []) + gltf.get("images", []) if b.get("uri")]
+        if any(not u.startswith("data:") for u in external):
+            self.errors.append(f"{where}: {path.name} points to outside files, export as one .glb file")
+        if gltf.get("animations"):
+            self.warnings.append(f"{where}: {path.name} has animations, they will not play")
 
     def color(self, v, where):
         if not isinstance(v, str) or not HEX_RE.fullmatch(v):

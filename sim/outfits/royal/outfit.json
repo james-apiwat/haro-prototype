@@ -1,0 +1,15 @@
+{
+  "format": "haro-outfit/1",
+  "name": "มงกุฎทอง",
+  "author": "ทีม Haro",
+  "description": "มงกุฎเป็นโมเดล 3 มิติ (crown.glb) ตัวอย่างการใช้ไฟล์ .glb แทนรูปทรงพื้นฐาน",
+  "credits": "crown.glb สร้างด้วยโค้ดโดยทีม Haro",
+  "body": {
+    "wings": { "color": "#7e57c2" },
+    "base": { "color": "#4a2c6b" },
+    "ring": { "color": "#f2c14e", "glow": "#ffb300", "glowStrength": 0.7 }
+  },
+  "parts": [
+    { "name": "มงกุฎ", "at": "head", "model": "crown.glb", "pos": [0, -1.0, 0] }
+  ]
+}

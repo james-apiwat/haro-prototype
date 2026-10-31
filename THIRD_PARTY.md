@@ -28,7 +28,10 @@ Full licence text: `third_party/LICENSE-yunet.txt`
 
 https://github.com/mrdoob/three.js
 
-- `sim/vendor/three.module.js`, `three.core.js`, `OrbitControls.js` and `RoomEnvironment.js` are unmodified files
-  from the `three` npm package, version 0.187.0. They render the 3D simulator in `sim/`.
+- `sim/vendor/three.module.js`, `three.core.js`, `OrbitControls.js`, `RoomEnvironment.js`,
+  `loaders/GLTFLoader.js` and `utils/BufferGeometryUtils.js` are unmodified files from the `three` npm package,
+  version 0.187.0. They render the 3D simulator in `sim/` and load `.glb` outfit models.
+- `sim/vendor/utils/SkeletonUtils.js` is not the three.js file. It is a one-function stand-in written for this
+  project so that `GLTFLoader.js` can import `clone()`; it only handles models without skeletons.
 
 Full licence text: `third_party/LICENSE-three.txt`

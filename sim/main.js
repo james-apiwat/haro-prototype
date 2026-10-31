@@ -9,6 +9,7 @@ import { RoomEnvironment } from "./vendor/RoomEnvironment.js";
 import { Brain, Memory, TRICKS, CONFIG } from "./brain.js";
 import { drawFace, COLORS } from "./face.js";
 import { Wardrobe, drawSkinTemplate } from "./outfit.js";
+import { writeGLB } from "./glb.js";
 
 // ============================================================
 // ค่าฮาร์ดแวร์ (ปรับได้)
@@ -171,13 +172,14 @@ yaw.position.y = BODY_Y;
 root.add(yaw);
 
 // ฐาน (มี MG996R อยู่ข้างใน)
-addMesh(root, new THREE.LatheGeometry([
+const baseBody = addMesh(root, new THREE.LatheGeometry([
   [0, 0], [4.1, 0], [4.25, 0.25], [4.2, 0.6], [3.85, 4.3], [3.7, 4.65], [3.4, BASE_H], [0, BASE_H],
 ].map(([x, y]) => new THREE.Vector2(x, y)), 64), mats.base, "base");
 const ring = addMesh(root, new THREE.TorusGeometry(3.87, 0.1, 12, 96), mats.ring, "base");
 ring.rotation.x = Math.PI / 2;
 ring.position.y = 4.25;
-addMesh(root, new THREE.CylinderGeometry(3.0, 3.0, 0.26, 48), mats.dark, "base").position.y = BASE_H + 0.13;
+const baseTop = addMesh(root, new THREE.CylinderGeometry(3.0, 3.0, 0.26, 48), mats.dark, "base");
+baseTop.position.y = BASE_H + 0.13;
 
 // เปลือก
 const shellPts = [new THREE.Vector2(0, 0), ...shellProfile()];
@@ -257,11 +259,13 @@ const crownGlow = new THREE.Mesh(new THREE.LatheGeometry(shellProfile(CROWN_Y), 
 crownGlow.scale.setScalar(1.015);
 crownGlow.renderOrder = 2;
 yaw.add(crownGlow);
+const padMeshes = { crown: crownGlow };
 for (const [start, zone] of [[SIDE_PHI[0], "left"], [Math.PI + SIDE_PHI[0], "right"]]) {
   const g = new THREE.Mesh(new THREE.LatheGeometry(shellProfile(0.3, CROWN_Y), 40, start, SIDE_PHI[1]), glow[zone]);
   g.scale.setScalar(1.015);
   g.renderOrder = 2;
   yaw.add(g);
+  padMeshes[zone] = g;
 }
 
 // จุดยึดของแต่งจากไฟล์ชุด (พิกัดอธิบายใน outfits/README.md) ทุกจุดหมุนไปกับตัว ยกเว้น base
@@ -1024,6 +1028,56 @@ $("skinTemplate").onclick = () => {
   c.toBlob((b) => download("haro-skin-template.png", b, "image/png"));
 };
 
+// ตัว Haro เป็นไฟล์ .glb ไว้ปั้นของแต่งใน Blender (สีเดิม ไม่รวมชุดที่ใส่อยู่)
+// 1 หน่วย = 1 ซม.  จุดกำเนิด = จุดยึด body (ก้นตัว) ปั้นของแต่งตรงตำแหน่งบนตัวนี้แล้วใส่ "at": "body" ได้เลย
+function bodyGLB() {
+  const yawInv = new THREE.Matrix4().copy(yaw.matrixWorld).invert();
+  const baseToBody = new THREE.Matrix4().makeTranslation(0, -BODY_Y, 0);
+  const frame = (o) => {
+    o.updateWorldMatrix(true, false);
+    let onBody = false;
+    o.traverseAncestors((a) => { if (a === yaw) onBody = true; });
+    return new THREE.Matrix4().multiplyMatrices(onBody ? yawInv : baseToBody, o.matrixWorld);
+  };
+  const lin = (c) => new THREE.Color(c).toArray();          // three.js เก็บสีแบบ linear เหมือน glTF
+  const slot = (name, mesh, s, extra = {}) => {
+    const d = wardrobe.defaults[s];
+    return { name, geometry: mesh.geometry, matrix: frame(mesh), color: lin(d.color), roughness: d.roughness,
+      metalness: d.metalness, ...extra };
+  };
+  const plain = (name, mesh, color, extra = {}) => ({ name, geometry: mesh.geometry, matrix: frame(mesh), color: lin(color), ...extra });
+
+  // บริเวณที่กล้องมองเห็น ยาว 12 ซม. ของแต่งไม่ควรล้ำเข้าไป
+  const L = 12, th = Math.tan((HW.CAM_VFOV / 2) * D2R) * L, tw = (th * 4) / 3;
+  const view = new THREE.BufferGeometry();
+  view.setAttribute("position", new THREE.Float32BufferAttribute([0, 0, 0, -tw, -th, -L, tw, -th, -L, tw, th, -L, -tw, th, -L], 3));
+  view.setIndex([0, 1, 2, 0, 2, 3, 0, 3, 4, 0, 4, 1]);
+
+  const meshes = [
+    slot("shell", shell, "shell", { uv: true }),
+    slot("wing_left", wings[0], "wings"),
+    slot("wing_right", wings[1], "wings"),
+    ...leaves.map((l, i) => slot(`leaf_${i + 1}`, l, "leaves")),
+    slot("screen_bezel", bezel, "bezel"),
+    slot("screen_rim", bezelRim, "bezel"),
+    plain("screen", screen, wardrobe.faceDefaults.screen, { roughness: 0.2 }),
+    slot("camera_lens_body", lensBody, "bezel"),
+    plain("camera_lens", lensGlass, 0x14243a, { roughness: 0.1 }),
+    slot("base", baseBody, "base"),
+    slot("base_ring", ring, "ring"),
+    plain("base_top", baseTop, 0x0b0f10),
+    ...Object.entries(padMeshes).map(([z, m]) => plain(`touch_pad_${z}`, m, 0x8fe3ea, { opacity: 0.35, doubleSided: true })),
+    { name: "camera_view_keep_clear", geometry: view, matrix: frame(haroCam), color: lin(0xff5050), opacity: 0.18,
+      doubleSided: true },
+  ];
+  const empties = Object.entries(anchors).map(([name, a]) =>
+    ({ name: `anchor_${name}`, position: new THREE.Vector3().setFromMatrixPosition(frame(a)).toArray() }));
+  const out = writeGLB({ meshes, empties, generator: "Haro Simulator (sim/main.js)" });
+  view.dispose();
+  return out;
+}
+$("bodyGlb").onclick = () => download("haro-body.glb", bodyGLB(), "model/gltf-binary");
+
 // ลากโฟลเดอร์ชุดมาวางบนหน้านี้ = ลองใส่ทันที
 async function readEntry(entry, out) {
   if (out.length > 300) return;
@@ -1341,6 +1395,7 @@ window.haroSim = {
   get yawDeg() { return yawDeg; },
   mem, bot, camera, controls, setSpeed, setXray, setSeated, wardrobe,
   get outfits() { return outfits; },
+  bodyGLB,
   wear: (id) => wearOutfit(outfits.find((o) => o.id === id)),
   pet: (src = "devtools") => { pendingPet = src; },
   talk: () => { pendingHeard = true; },
